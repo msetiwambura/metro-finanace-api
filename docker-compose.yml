@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: Metro
+      POSTGRES_USER: fusion
+      POSTGRES_PASSWORD: Metro@2025
+    ports:
+      - "5432:5432"
+    volumes:
+      - /Users/mnyasambo/MetroFusion/Apps/Metrodockerdata:/var/lib/postgresql/data
+
+  metro-api:
+    image: mnyasambo/metro-api:latest
+    ports:
+      - "2022:2022"
+    environment:
+      SPRING_CONFIG_LOCATION: file:/app/config/
+    depends_on:
+      - postgres
