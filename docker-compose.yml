@@ -1,5 +1,7 @@
 services:
   postgres:
+    networks:
+      - app-network
     image: postgres:15
     environment:
       POSTGRES_DB: Metro
@@ -11,6 +13,8 @@ services:
       - /Users/mnyasambo/MetroFusion/Apps/Metrodockerdata:/var/lib/postgresql/data
 
   metro-api:
+    networks:
+      - app-network
     image: mnyasambo/metro-api:latest
     ports:
       - "2022:2022"
@@ -18,3 +22,6 @@ services:
       SPRING_CONFIG_LOCATION: file:/app/config/
     depends_on:
       - postgres
+networks:
+  app-network:
+    external: true
