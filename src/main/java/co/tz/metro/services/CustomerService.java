@@ -33,7 +33,7 @@ public class CustomerService {
     }
 
     public List<CustomerResponseDTO> getAllCustomers() {
-        return customerRepository.findAll().stream().map(
+        return customerRepository.findAllByOrderByCreatedAtDesc().stream().map(
                 customer -> {
                     CustomerResponseDTO customerResponseDTO = new CustomerResponseDTO();
                     customerResponseDTO.setId(customer.getId());

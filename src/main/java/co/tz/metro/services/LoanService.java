@@ -161,7 +161,7 @@ public class LoanService {
 
     public List<Loan> getLoansFiltered(String status, LocalDate startDate, LocalDate endDate) {
         System.out.println("This is status : "+status);
-        Sort sort = Sort.by(Sort.Direction.DESC, "startDate");
+        Sort sort = Sort.by(Sort.Direction.ASC, "startDate");
         if (status != null && startDate != null && endDate != null) {
             return loanRepository.findByStatusAndStartDateBetween(status, startDate, endDate, sort);
         } else if (status != null) {
