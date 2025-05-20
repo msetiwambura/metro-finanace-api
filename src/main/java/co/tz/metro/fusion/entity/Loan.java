@@ -33,6 +33,14 @@ public class Loan {
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
 
+    @ManyToOne
+    @JoinColumn(name = "loanProduct_id")
+    private LoanProduct loanProduct;
+
+    @ManyToOne
+    @JoinColumn(name = "collateral_id", nullable = true)
+    private Collateral collateral;
+
     @OneToMany(mappedBy = "loan", cascade = CascadeType.ALL)
     private List<Repayment> repayments;
 
@@ -134,5 +142,21 @@ public class Loan {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public LoanProduct getLoanProduct() {
+        return loanProduct;
+    }
+
+    public void setLoanProduct(LoanProduct loanProduct) {
+        this.loanProduct = loanProduct;
+    }
+
+    public Collateral getCollateral() {
+        return collateral;
+    }
+
+    public void setCollateral(Collateral collateral) {
+        this.collateral = collateral;
     }
 }

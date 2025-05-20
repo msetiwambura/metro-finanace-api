@@ -1,4 +1,5 @@
 package co.tz.metro.services;
+
 import co.tz.metro.dto.loanDtos.*;
 import co.tz.metro.fusion.entity.Customer;
 import co.tz.metro.fusion.entity.Loan;
@@ -6,14 +7,21 @@ import co.tz.metro.fusion.entity.LoanSchedule;
 import co.tz.metro.fusion.repository.CustomerRepository;
 import co.tz.metro.fusion.repository.LoanRepository;
 import co.tz.metro.fusion.repository.LoanScheduleRepository;
+import co.tz.metro.fusion.repository.RepaymentRepository;
 import co.tz.metro.interfaces.LoanWithOutstandingAmount;
+import co.tz.metro.utils.LoanCalculationUtil;
 import co.tz.metro.utils.LoanScheduleGenerator;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static co.tz.metro.utils.LoanCalculationUtil.calculateInterestPart;
+import static co.tz.metro.utils.LoanCalculationUtil.calculatePrincipalPart;
 
 @Service
 public class LoanService {
@@ -21,12 +29,15 @@ public class LoanService {
     private final LoanRepository loanRepository;
     private final CustomerRepository customerRepository;
     private final LoanScheduleRepository loanScheduleRepository;
+    private final RepaymentRepository repaymentRepository;
 
-    public LoanService(LoanRepository loanRepository, CustomerRepository customerRepository, LoanScheduleRepository loanScheduleRepository) {
+    public LoanService(LoanRepository loanRepository, CustomerRepository customerRepository, LoanScheduleRepository loanScheduleRepository, RepaymentRepository repaymentRepository) {
         this.loanRepository = loanRepository;
         this.customerRepository = customerRepository;
         this.loanScheduleRepository = loanScheduleRepository;
+        this.repaymentRepository = repaymentRepository;
     }
+
     @Transactional
     public Loan createLoan(LoanRequestDTO loan) {
         Customer customer = customerRepository.findById(loan.getCustomerId())
@@ -87,10 +98,6 @@ public class LoanService {
             loan.setDueDate(request.getDueDate());
         }
 
-        if (request.getStatus() != null && !request.getStatus().isBlank()) {
-            loan.setStatus(request.getStatus());
-        }
-
         if (request.getFirstRepaymentDate() != null) {
             loan.setFirstRepaymentDate(request.getFirstRepaymentDate());
         }
@@ -101,9 +108,22 @@ public class LoanService {
             loan.setCustomer(customer);
         }
 
+        if (request.getStatus() != null && !request.getStatus().isBlank()) {
+            if (request.getStatus().equalsIgnoreCase("re-activate")) {
+                repaymentRepository.deleteByLoan(loan);
+                List<LoanSchedule> schedules = loanScheduleRepository.findByLoan(loan);
+                for (LoanSchedule schedule : schedules) {
+                    schedule.setPaid(false);
+                }
+                loanScheduleRepository.saveAll(schedules);
+                loan.setStatus("active");
+            } else {
+                loan.setStatus(request.getStatus());
+            }
+        }
+
         return loanRepository.save(loan);
     }
-
 
 
     public CustomerLoanDetailsDTO getCustomerWithActiveLoans(Long customerId) {
@@ -140,15 +160,51 @@ public class LoanService {
 
 
     public List<Loan> getLoansFiltered(String status, LocalDate startDate, LocalDate endDate) {
+        System.out.println("This is status : "+status);
+        Sort sort = Sort.by(Sort.Direction.DESC, "startDate");
         if (status != null && startDate != null && endDate != null) {
-            return loanRepository.findByStatusAndStartDateBetween(status, startDate, endDate);
+            return loanRepository.findByStatusAndStartDateBetween(status, startDate, endDate, sort);
         } else if (status != null) {
-            return loanRepository.findByStatus(status);
+            return loanRepository.findByStatus(status, sort);
         } else if (startDate != null && endDate != null) {
-            return loanRepository.findByStartDateBetween(startDate, endDate);
+            return loanRepository.findByStartDateBetween(startDate, endDate, sort);
         } else {
-            return loanRepository.findAll();
+            return loanRepository.findByStatusIn(List.of("pending", "active"), sort);
         }
     }
 
+
+    public LoanSummaryDto getLoanSummary(LocalDate startDate, LocalDate endDate) {
+        Sort sort = Sort.by(Sort.Direction.DESC, "startDate");
+        List<Loan> loans = loanRepository.findByStartDateBetween(startDate, endDate, sort);
+        if (loans.isEmpty()) {
+            return null;
+        } else {
+            BigDecimal totalLoaned = loans.stream()
+                    .map(Loan::getPrincipalAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal totalProjectedProfit = loans.stream()
+                    .map(loan -> loan.getPrincipalAmount()
+                            .multiply(loan.getInterestRate().divide(new BigDecimal("100"))))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal totalRepaidPrincipal = loans.stream()
+                    .flatMap(loan -> loan.getRepayments().stream())
+                    .map(LoanCalculationUtil::calculatePrincipalPart) // implement this
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal totalRepaidInterest = loans.stream()
+                    .flatMap(loan -> loan.getRepayments().stream())
+                    .map(LoanCalculationUtil::calculateInterestPart) // implement this
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal totalRemainingRepayment = totalLoaned.subtract(totalRepaidPrincipal);
+            BigDecimal totalRemainingInterest = totalProjectedProfit.subtract(totalRepaidInterest);
+
+            return new LoanSummaryDto(startDate, endDate,
+                    totalLoaned, totalProjectedProfit,
+                    totalRepaidPrincipal, totalRepaidInterest,
+                    totalRemainingRepayment, totalRemainingInterest);
+        }
+    }
 }

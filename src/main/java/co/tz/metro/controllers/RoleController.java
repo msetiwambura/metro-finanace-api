@@ -1,6 +1,7 @@
 package co.tz.metro.controllers;
 import co.tz.metro.data.ApiResponse;
 import co.tz.metro.dto.RoleDtos.RoleDTO;
+import co.tz.metro.dto.RoleDtos.RoleResDTO;
 import co.tz.metro.fusion.entity.Role;
 import co.tz.metro.services.RoleService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,8 +19,8 @@ public class RoleController {
 
     @PostMapping
     public ResponseEntity<?> createRole(@RequestBody RoleDTO dto) {
-        Role role = roleService.addRole(dto);
-        ApiResponse<Role> res = new ApiResponse<>(
+        RoleResDTO role = roleService.addRole(dto);
+        ApiResponse<RoleResDTO> res = new ApiResponse<>(
                 true,
                 "success",
                 role

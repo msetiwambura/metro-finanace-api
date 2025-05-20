@@ -10,4 +10,5 @@ public interface LoanScheduleRepository extends JpaRepository<LoanSchedule, Long
     List<LoanSchedule> findByLoanId(Long loanId);
     List<LoanSchedule> findByLoanAndIsPaidFalseOrderByDueDateAsc(Loan loan);
     List<LoanSchedule> findByLoanIdAndIsPaidFalse(Long loanId);
+    List<LoanSchedule> findByLoan(Loan loan);
 }

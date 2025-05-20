@@ -4,6 +4,7 @@ import co.tz.metro.data.AuthRequest;
 import co.tz.metro.data.RegisterRequest;
 import co.tz.metro.dto.userDtos.UserDTO;
 import co.tz.metro.dto.userDtos.UserUpdateDTO;
+import co.tz.metro.fusion.entity.Permission;
 import co.tz.metro.fusion.entity.Role;
 import co.tz.metro.fusion.entity.User;
 import co.tz.metro.fusion.repository.RoleRepository;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -71,7 +73,9 @@ public class AuthService {
     }
 
 
+
     public ResponseEntity<?> login(AuthRequest loginRequest) {
+        // Authenticate the user
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginRequest.getEmail(), loginRequest.getPassword()
@@ -79,13 +83,21 @@ public class AuthService {
         );
         User user = userRepository.findByEmail(loginRequest.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        String roleName = user.getRoles().stream()
+        Role role = user.getRoles().stream()
                 .findFirst()
-                .map(Role::getName)
-                .orElse("Uknown role");
-        String token = jwtUtil.generateUserToken(user.getEmail(), roleName);
+                .orElseThrow(() -> new RuntimeException("No role assigned to user"));
+
+        String roleName = role.getName();
+        List<String> permissions = role.getPermissions().stream()
+                .map(Permission::getName)
+                .toList();
+        String token = jwtUtil.generateUserToken(user.getEmail(), roleName , permissions);
         return ResponseEntity.ok().body(
-                java.util.Map.of("token", token, "role", roleName)
+                Map.of(
+                        "token", token,
+                        "role", roleName,
+                        "permissions", permissions
+                )
         );
     }
 

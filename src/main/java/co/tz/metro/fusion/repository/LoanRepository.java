@@ -2,6 +2,7 @@ package co.tz.metro.fusion.repository;
 import co.tz.metro.dto.loanDtos.LoanHistoryDTO;
 import co.tz.metro.fusion.entity.Loan;
 import co.tz.metro.interfaces.LoanWithOutstandingAmount;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -29,8 +30,8 @@ public interface LoanRepository extends JpaRepository<Loan, Long> {
             "ORDER BY l.startDate DESC")
     List<LoanHistoryDTO> findLoanHistoryByCustomer(@Param("customerId") Long customerId);
 
-    List<Loan>findByStatus(String status);
-    List<Loan> findByStartDateBetween(LocalDate startDate, LocalDate endDate);
-    List<Loan> findByStatusAndStartDateBetween(String status, LocalDate startDate, LocalDate endDate);
-
+    List<Loan>findByStatus(String status, Sort sort);
+    List<Loan> findByStartDateBetween(LocalDate startDate, LocalDate endDate, Sort sort);
+    List<Loan> findByStatusAndStartDateBetween(String status, LocalDate startDate, LocalDate endDate, Sort sort);
+    List<Loan> findByStatusIn(List<String> statuses,Sort sort);
 }

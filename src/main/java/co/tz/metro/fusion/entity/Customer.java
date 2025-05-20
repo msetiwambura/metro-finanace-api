@@ -12,7 +12,7 @@ import java.util.List;
 @Builder
 @Table(name = "customers")
 public class Customer {
-
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -25,9 +25,18 @@ public class Customer {
     private LocalDate dateOfBirth;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
     @JsonIgnore
     private List<Loan> loans;
+
+    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<Collateral> collaterals;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "credit_score_id", unique = true)
+    private CreditScore creditScore;
 
     public Long getId() {
         return id;
@@ -99,5 +108,20 @@ public class Customer {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public CreditScore getCreditScore() {
+        return creditScore;
+    }
+
+    public void setCreditScore(CreditScore creditScore) {
+        this.creditScore = creditScore;
+    }
+
+    public List<Collateral> getCollaterals() {
+        return collaterals;
+    }
+    public void setCollaterals(List<Collateral> collaterals) {
+        this.collaterals = collaterals;
     }
 }

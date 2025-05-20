@@ -10,6 +10,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.spec.SecretKeySpec;
+import java.util.List;
 import java.util.function.Function;
 
 @Component
@@ -24,13 +25,14 @@ public class JwtUtil {
         this.key = new SecretKeySpec(keyBytes, "HmacSHA256");
     }
 
-    public String generateUserToken(String username, String role) {
+    public String generateUserToken(String username, String role, List<String> permissions) {
         return Jwts.builder()
                 .setSubject(username)
                 .claim("role", role)
                 .claim("type", "USER")
+                .claim("permissions", permissions)
                 .setIssuedAt(new Date())
-//                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 5)) // 5 minutes
+//                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 2)) // 5 minutes
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10 hours
                 .signWith(SignatureAlgorithm.HS256, key)
                 .compact();

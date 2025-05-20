@@ -2,10 +2,7 @@ package co.tz.metro.controllers;
 
 import co.tz.metro.data.ApiResponse;
 import co.tz.metro.data.IdResponse;
-import co.tz.metro.dto.loanDtos.CustomerLoanDetailsDTO;
-import co.tz.metro.dto.loanDtos.LoanRequestDTO;
-import co.tz.metro.dto.loanDtos.LoanResponseDTO;
-import co.tz.metro.dto.loanDtos.LoanUpdateDTO;
+import co.tz.metro.dto.loanDtos.*;
 import co.tz.metro.fusion.entity.Loan;
 import co.tz.metro.services.LoanService;
 import jakarta.validation.Valid;
@@ -71,6 +68,20 @@ public class LoanController {
                 true,
                 "success",
                 loans
+        );
+        return ResponseEntity.ok(res);
+    }
+
+    @GetMapping("/summary")
+    public ResponseEntity<?> getLoanSummary(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+
+        ApiResponse<LoanSummaryDto> res = new ApiResponse<>(
+                true,
+                "success",
+                loanService.getLoanSummary(startDate, endDate)
         );
         return ResponseEntity.ok(res);
     }
